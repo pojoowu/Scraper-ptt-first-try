@@ -28,7 +28,8 @@ export default function (section, k, callback) {
             $('.push').each(() => {
               data.comments++;
             });
-            data.content = $('#main-content').children().remove().end().text().replace(/\n|,/g, ' ').replace(/\t/g, ' ');
+            data.content = $('#main-content').find('.push, .richcontent, .f2')
+            .remove().end().text().replace(/\n|,/g, ' ').replace(/\t/g, ' ');
             database.push(data);
             if(database.length === 5){
               callback(database);
