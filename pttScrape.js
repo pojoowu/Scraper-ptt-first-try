@@ -2,10 +2,8 @@
 // const cheerio = require('cheerio');
 import request from 'request';
 import cheerio from 'cheerio';
-export default function (section, callback) {
-  let database = [],
-    index = 0;
-  //for (let i = 0; i < 5; i++) {
+export default function (section, k, callback) {
+  let database = [];
   request(`https://www.ptt.cc/bbs/${section}/index.html`, (error, response, html) => {
     if (!error && response.statusCode === 200) {
       const $ = cheerio.load(html);
@@ -31,7 +29,10 @@ export default function (section, callback) {
               data.comments++;
             });
             data.content = $('#main-content').children().remove().end().text().replace(/\n|,/g, ' ').replace(/\t/g, ' ');
-            callback(data);
+            database.push(data);
+            if(database.length === 5){
+              callback(database);
+            }
           }
         });
       })
