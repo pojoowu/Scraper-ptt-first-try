@@ -2,42 +2,53 @@
 // const cheerio = require('cheerio');
 import request from 'request';
 import cheerio from 'cheerio';
-export default async function (section, startingPage, k) {
-  let database = [];
-  let j = 0,
-      stopping = false;
-  while(j < k && !stopping) {
-    let html = await findPttTitle(section, startingPage - j);
-    let $ = cheerio.load(html);
-    $('.r-ent').each(async function (i, el) {
-      let data = await grabData(i, el, $);
-      if (database.length < k) {
-        database.push(data);
-      } else {
-        stopping = true
-      }
-    });
-    j++;
-  }
-  console.log("Done");
-  return database;
+export default async function grabPttArticles(section, startingPage, k) {
+  const indices = Array(Math.floor(k/10)).fill(0).map((val, index) => startingPage - index);
+  const database = await Promise.all(indices.map((index) => getPttArticleByIndex(section, index)));
+  return [].concat(...(database)).splice(0, k);
 }
 
-async function grabData(i, el, $) {
+async function getPttArticleByIndex(section, index){
+  const html = await findHTML(`https://www.ptt.cc/bbs/${section}/index${index}.html`);
+  const $body = cheerio.load(html);
+  const $titles = $body('.r-ent');
+  const results = await Promise.all($titles.map((i, el) => grabData($body(el))));
+  return results.reverse();
+}
+//   let j = 0,
+//     stopping = false;
+//   while (j < k && !stopping) {
+//     let html = await findHTML(`${section}/index${startingPage - j}`);
+//     let $ = cheerio.load(html);
+//     $('.r-ent').each(async function (i, el) {
+//       let data = await grabData(i, el, $);
+//       if (database.length < k) {
+//         database.push(data);
+//       } else {
+//         stopping = true;
+//       }
+//     });
+//     j++;
+//   }
+//   console.log("Done");
+//   return database;
+// }
+
+async function grabData($el) {
   //grabbing the title, link, date
-  const title = $(el).find('.title a').text();
-  const link = $(el).find('.title a').attr('href');
-  const date = $(el).find('.meta .date').text();
-  let data = {
+  const title = $el.find('.title a').text();
+  const link = $el.find('.title a').attr('href');
+  const date = $el.find('.meta .date').text();
+  const data = {
     title: title,
     link: link,
     date: date,
-    content: '',
-    comments: 0
+    content: null,
+    comments: null
   };
   try {
-    let html = await grabPttContent(link);
-    let $ = cheerio.load(html);
+    const html = await findHTML(`http://www.ptt.cc/${link}`);
+    const $ = cheerio.load(html);
     data.commemts = $('.push').length;
     data.content = $('#main-content').find('.push, .richcontent, .f2')
       .remove().end().text().replace(/\n|,|\t/g, ' ');
@@ -47,32 +58,22 @@ async function grabData(i, el, $) {
   return data;
 }
 
-function findPttTitle(section, index) {
+
+function findHTML(link) {
   return (
     new Promise((resolve, reject) => {
-      request(`http://www.ptt.cc/bbs/${section}/index${index}.html`,
+      request(link,
         (error, response, html) => {
-          if (error || response.statusCode !== 200) {
+          if (error) {
             reject(error);
-          } else {
+          } 
+          else if(response.statusCode !== 200){
+            reject(new Error(`Get response with status code ${response.statusCode}`));
+          }
+          else {
             resolve(html);
           }
         });
-    })
-  );
-}
-
-function grabPttContent(link) {
-  return (
-    new Promise((resolve, reject) => {
-      request(`http://www.ptt.cc${link}`,
-        (error, response, html) => {
-          if (error || response.statusCode !== 200) {
-            reject(error);
-          } else {
-            resolve(html);
-          }
-        })
     })
   );
 }

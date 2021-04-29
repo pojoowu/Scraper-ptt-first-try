@@ -4,12 +4,16 @@ import fn from './pttScrape.js';
 
 //Write Headers
 writeStream.write(`Title, Link, Content, NbComments, Date \n`);
-try {
+async function main() {
   const database = await fn("Hearthstone", 2716, 100);
-  for (let data of database) {
-    writeStream.write(`${data.title}, ${data.link}, ${data.content},
+  try {
+    for (let data of database) {
+      writeStream.write(`${data.title}, ${data.link}, ${data.content},
   ${data.comments}, ${data.date} \n`);
-  }
-} catch (error) {
+    }
+  } catch (error) {
 
+  }
 }
+
+main();
