@@ -4,16 +4,20 @@ import request from 'request';
 import cheerio from 'cheerio';
 export default async function (section, startingPage, k) {
   let database = [];
-  let canReturn = false;
-  for (let j = 0; j < Math.floor(k / 10); j++) {
+  let j = 0,
+      stopping = false;
+  while(j < k && !stopping) {
     let html = await findPttTitle(section, startingPage - j);
     let $ = cheerio.load(html);
     $('.r-ent').each(async function (i, el) {
       let data = await grabData(i, el, $);
       if (database.length < k) {
         database.push(data);
+      } else {
+        stopping = true
       }
     });
+    j++;
   }
   console.log("Done");
   return database;
