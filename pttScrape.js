@@ -8,44 +8,39 @@ export default async function (section, startingPage, k) {
   for (let j = 0; j < Math.floor(k / 10); j++) {
     let html = await findPttTitle(section, startingPage - j);
     let $ = cheerio.load(html);
-
-    $('.r-ent').each((i, el) => {
-      //grabbing the title, link, date
-      const title = $(el).find('.title a').text();
-      const link = $(el).find('.title a').attr('href');
-      const date = $(el).find('.meta .date').text();
-      let data = {
-        title: title,
-        link: link,
-        date: date,
-        content: '',
-        comments: 0
-      };
-      console.log(link);
-      const p2 = grabPttContent(link);
-      p2.then((html) => {
-        let $ = cheerio.load(html);
-        data.commemts = $('.push').length;
-        data.content = $('#main-content').find('.push, .richcontent, .f2')
-          .remove().end().text().replace(/\n|,|\t/g, ' ');
-        console.log(database.length);
-        if (database.length < k) {
-          database.push(data);
-        } else {
-          canReturn = true;
-        }
-      }).catch((error) => {
-        data.content = 'deleted';
+    $('.r-ent').each(async function (i, el) {
+      let data = await grabData(i, el, $);
+      if (database.length < k) {
         database.push(data);
-      });
+      }
     });
   }
-  console.log(database);
+  console.log("Done");
   return database;
 }
 
-function grabData() {
-
+async function grabData(i, el, $) {
+  //grabbing the title, link, date
+  const title = $(el).find('.title a').text();
+  const link = $(el).find('.title a').attr('href');
+  const date = $(el).find('.meta .date').text();
+  let data = {
+    title: title,
+    link: link,
+    date: date,
+    content: '',
+    comments: 0
+  };
+  try {
+    let html = await grabPttContent(link);
+    let $ = cheerio.load(html);
+    data.commemts = $('.push').length;
+    data.content = $('#main-content').find('.push, .richcontent, .f2')
+      .remove().end().text().replace(/\n|,|\t/g, ' ');
+  } catch (error) {
+    data.content = "deleted";
+  }
+  return data;
 }
 
 function findPttTitle(section, index) {
