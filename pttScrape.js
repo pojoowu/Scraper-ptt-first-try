@@ -2,51 +2,51 @@
 // const cheerio = require('cheerio');
 import request from 'request';
 import cheerio from 'cheerio';
-export default function (section, startingPage, k) {
+export default async function (section, startingPage, k) {
   let database = [];
-  return (new Promise((resolve, reject) => {
-    for (let j = 0; j < Math.floor(k / 10); j++) {
-      const p1 = findPttTitle(section, startingPage - j);
-      p1.catch(console.error);
-      p1.then((html) => {
-        let $ = cheerio.load(html);
+  let canReturn = false;
+  for (let j = 0; j < Math.floor(k / 10); j++) {
+    let html = await findPttTitle(section, startingPage - j);
+    let $ = cheerio.load(html);
 
-        $('.r-ent').each((i, el) => {
-          //grabbing the title, link, date
-          const title = $(el).find('.title a').text();
-          const link = $(el).find('.title a').attr('href');
-          const date = $(el).find('.meta .date').text();
-          let data = {
-            title: title,
-            link: link,
-            date: date,
-            content: '',
-            comments: 0
-          };
-          console.log(link);
-          const p2 = grabPttContent(link);
-          p2.then((html) => {
-            let $ = cheerio.load(html);
-            data.commemts = $('.push').length;
-            data.content = $('#main-content').find('.push, .richcontent, .f2')
-              .remove().end().text().replace(/\n|,|\t/g, ' ');
-            database.push(data);
-            if (database.length === k) {
-              resolve(database);
-            }
-          }).catch((error) => {
-            data.content = 'deleted';
-            database.push(data);
-            if(database.length === k){
-              resolve(database);
-            }
-          });
-        });
+    $('.r-ent').each((i, el) => {
+      //grabbing the title, link, date
+      const title = $(el).find('.title a').text();
+      const link = $(el).find('.title a').attr('href');
+      const date = $(el).find('.meta .date').text();
+      let data = {
+        title: title,
+        link: link,
+        date: date,
+        content: '',
+        comments: 0
+      };
+      console.log(link);
+      const p2 = grabPttContent(link);
+      p2.then((html) => {
+        let $ = cheerio.load(html);
+        data.commemts = $('.push').length;
+        data.content = $('#main-content').find('.push, .richcontent, .f2')
+          .remove().end().text().replace(/\n|,|\t/g, ' ');
+        console.log(database.length);
+        if (database.length < k) {
+          database.push(data);
+        } else {
+          canReturn = true;
+        }
+      }).catch((error) => {
+        data.content = 'deleted';
+        database.push(data);
       });
-    }
-  }));
+    });
+  }
+  console.log(database);
+  return database;
 }
 
+function grabData() {
+
+}
 
 function findPttTitle(section, index) {
   return (
