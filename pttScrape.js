@@ -14,7 +14,7 @@ export default function (section, startingPage, k) {
         $('.r-ent').each((i, el) => {
           //grabbing the title, link, date
           const title = $(el).find('.title a').text();
-          const link = $(el).find('a').attr('href');
+          const link = $(el).find('.title a').attr('href');
           const date = $(el).find('.meta .date').text();
           let data = {
             title: title,
@@ -23,8 +23,8 @@ export default function (section, startingPage, k) {
             content: '',
             comments: 0
           };
+          console.log(link);
           const p2 = grabPttContent(link);
-          p2.catch(console.error);
           p2.then((html) => {
             let $ = cheerio.load(html);
             data.commemts = $('.push').length;
@@ -32,6 +32,12 @@ export default function (section, startingPage, k) {
               .remove().end().text().replace(/\n|,|\t/g, ' ');
             database.push(data);
             if (database.length === k) {
+              resolve(database);
+            }
+          }).catch((error) => {
+            data.content = 'deleted';
+            database.push(data);
+            if(database.length === k){
               resolve(database);
             }
           });
